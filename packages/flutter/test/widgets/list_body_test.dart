@@ -189,51 +189,68 @@ void main() {
     );
   });
 
-  testWidgets('ListBody reports intrinsic heights along its main axis', (
-    WidgetTester tester,
-  ) async {
-    final GlobalKey vertical = GlobalKey();
-    final GlobalKey horizontal = GlobalKey();
-    await tester.pumpWidget(
-      Directionality(
-        textDirection: TextDirection.ltr,
-        child: Column(
-          children: <Widget>[
-            SizedBox(
-              width: 200.0,
-              height: 300.0,
-              child: SingleChildScrollView(
-                child: ListBody(key: vertical, children: children),
+  testWidgets(
+    'ListBody intrinsic height is the sum of its children when vertical and the tallest child when horizontal',
+    (WidgetTester tester) async {
+      const vertical = Key('vertical');
+      const horizontal = Key('horizontal');
+      // Distinct sizes so that sum, max and "count × first child" all differ.
+      const sizedChildren = <Widget>[
+        SizedBox(width: 25.0, height: 20.0),
+        SizedBox(width: 50.0, height: 40.0),
+        SizedBox(width: 15.0, height: 10.0),
+      ];
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: Column(
+            children: <Widget>[
+              SizedBox(
+                width: 200.0,
+                height: 300.0,
+                child: SingleChildScrollView(
+                  child: ListBody(key: vertical, children: sizedChildren),
+                ),
               ),
-            ),
-            SizedBox(
-              width: 300.0,
-              height: 150.0,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ListBody(key: horizontal, mainAxis: Axis.horizontal, children: children),
+              SizedBox(
+                width: 300.0,
+                height: 150.0,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ListBody(
+                    key: horizontal,
+                    mainAxis: Axis.horizontal,
+                    children: sizedChildren,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
 
-    final RenderBox verticalBox = tester.renderObject(find.byKey(vertical));
-    expect(verticalBox.getMinIntrinsicHeight(200.0), 600.0);
-    expect(verticalBox.getMaxIntrinsicHeight(200.0), 600.0);
+      // Vertical: height is the main axis (sum), width is the cross axis (max).
+      final RenderBox verticalBox = tester.renderObject(find.byKey(vertical));
+      expect(verticalBox.getMinIntrinsicHeight(200.0), 70.0);
+      expect(verticalBox.getMaxIntrinsicHeight(200.0), 70.0);
+      expect(verticalBox.getMinIntrinsicWidth(300.0), 50.0);
+      expect(verticalBox.getMaxIntrinsicWidth(300.0), 50.0);
 
-    final RenderBox horizontalBox = tester.renderObject(find.byKey(horizontal));
-    expect(horizontalBox.getMinIntrinsicHeight(800.0), 150.0);
-    expect(horizontalBox.getMaxIntrinsicHeight(800.0), 150.0);
-  });
+      // Horizontal: width is the main axis (sum), height is the cross axis (max).
+      final RenderBox horizontalBox = tester.renderObject(find.byKey(horizontal));
+      expect(horizontalBox.getMinIntrinsicHeight(300.0), 40.0);
+      expect(horizontalBox.getMaxIntrinsicHeight(300.0), 40.0);
+      expect(horizontalBox.getMinIntrinsicWidth(150.0), 90.0);
+      expect(horizontalBox.getMaxIntrinsicWidth(150.0), 90.0);
+    },
+  );
 
   testWidgets('Horizontal ListBody in IntrinsicHeight takes its tallest child height', (
     WidgetTester tester,
   ) async {
-    final GlobalKey intrinsic = GlobalKey();
+    const intrinsic = Key('intrinsic');
     await tester.pumpWidget(
-      Directionality(
+      const Directionality(
         textDirection: TextDirection.ltr,
         child: Align(
           alignment: Alignment.topLeft,
@@ -243,7 +260,7 @@ void main() {
               key: intrinsic,
               child: ListBody(
                 mainAxis: Axis.horizontal,
-                children: const <Widget>[
+                children: <Widget>[
                   SizedBox(width: 10.0, height: 20.0),
                   SizedBox(width: 10.0, height: 40.0),
                   SizedBox(width: 10.0, height: 10.0),
